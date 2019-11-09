@@ -111,7 +111,7 @@ def body_positions(observer, body):
 		positions[1] = ephem.localtime( positions[1] ).strftime("%H:%M:%S")
 	if positions[2] != '-':
 		positions[2] = ephem.localtime( positions[2] ).strftime("%H:%M:%S")
-	
+
 	return positions
 
 def get_sun_twilights(observer):
@@ -141,7 +141,7 @@ def get_sun_twilights(observer):
 
 	# Twilights, their horizons and whether to use the centre of the Sun or not
 	twilights = [('-6', True), ('-12', True), ('-18', True)]
-	
+
 	for twi in twilights:
 		observer.horizon = twi[0]
 		try:
@@ -149,41 +149,41 @@ def get_sun_twilights(observer):
 			results.append((rising_setting[0], rising_setting[2]))
 		except ephem.AlwaysUpError:
 			results.append(('n/a', 'n/a'))
-	
+
 	# reset observer horizon to entry
 	observer.horizon = observer_horizon
 
 	return results
 
 def polaris_data(observer):
-	
+
 	polaris_data = []
-	
+
 	"""
 	lst = 100.46 + 0.985647 * d + lon + 15 * ut [based on http://www.stargazing.net/kepler/altaz.html]
 	d - the days from J2000 (1200 hrs UT on Jan 1st 2000 AD), including the fraction of a day
-	lon - your longitude in decimal degrees, East positive									
+	lon - your longitude in decimal degrees, East positive
 	ut - the universal time in decimal hours
 	"""
-	
+
 	j2000 = ephem.Date('2000/01/01 12:00:00')
 	d = observer.date - j2000
-		
+
 	lon = numpy.rad2deg(float(repr(observer.lon)))
 
 	utstr = observer.date.datetime().strftime("%H:%M:%S")
 	ut = float(utstr.split(":")[0]) + float(utstr.split(":")[1])/60 + float(utstr.split(":")[2])/3600
-	
+
 	lst = 100.46 + 0.985647 * d + lon + 15 * ut
 	lst = lst - int(lst / 360) * 360
-	
+
 	polaris = ephem.readdb("Polaris,f|M|F7,2:31:48.704,89:15:50.72,2.02,2000")
 	polaris.compute()
 	polaris_ra_deg = numpy.rad2deg(float(repr(polaris.ra)))
 
 	# Polaris Hour Angle = LST - RA Polaris [expressed in degrees or 15*(h+m/60+s/3600)]
 	pha = lst - polaris_ra_deg
-	
+
 	# normalize
 	if pha < 0:
 		pha += 360
@@ -192,22 +192,23 @@ def polaris_data(observer):
 
 	# append polaris hour angle
 	polaris_data.append(pha)
-	
+
 	# append polaris next transit
 	try:
 		polaris_data.append(ephem.localtime( observer.next_transit(polaris) ).strftime("%H:%M:%S"))
 	except (ephem.NeverUpError, ephem.AlwaysUpError):
 		polaris_data.append('-')
-	
+
 	# append polaris alt
 	polaris_data.append(polaris.alt)
-	
+
 	return polaris_data
 
 
 def background_thread():
 	while True:
 		t = datetime.datetime.utcnow()
+
 		home = ephem.Observer()
 		home.date = t
 		home.lat = '54.23'
