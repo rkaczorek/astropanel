@@ -43,7 +43,7 @@
                 $("#moon_alt").html(data.moon_alt);
                 $("#moon_ra").html(data.moon_ra);
                 $("#moon_dec").html(data.moon_dec);
-                $("#moon_new").html(data.moon_new);
+                $(".moon_new").html(data.moon_new);
                 $("#moon_full").html(data.moon_full);
                 $("#sun_at_start").html(data.sun_at_start);
                 $("#sun_ct_start").html(data.sun_ct_start);
@@ -188,6 +188,17 @@
 					$("#sun_solstice_first").css("display", "none");
 					$("#sun_solstice_second").css("display", "");
 				};
+
+				<!-- Set  New Moon and Full Moon in order-->
+				var nm = new Date(data.moon_new);
+				var fm = new Date(data.moon_full);
+				if (nm < fm) { 
+					$("#new_moon_first").css("display", "");
+					$("#new_moon_second").css("display", "none");
+				} else {
+					$("#new_moon_first").css("display", "none");
+					$("#new_moon_second").css("display", "");
+				};
             });
         });
     </script>
@@ -227,8 +238,9 @@
 				<tr><td class="moonhdr">Altitude</td><td class="moondata"><span id="moon_alt"></td></tr>
 				<tr><td class="moonhdr">Right ascension</td><td class="moondata"><span id="moon_ra"></td></tr>
 				<tr><td class="moonhdr">Declination</td><td class="moondata"><span id="moon_dec"></td></tr>
-				<tr><td class="moonhdr">Next new moon</td><td class="moondata"><span id="moon_new"></span></td></tr>
+				<tr id="new_moon_first"><td class="moonhdr">Next new moon</td><td class="moondata"><span class="moon_new"></span></td></tr>
 				<tr><td class="moonhdr">Next full moon</td><td class="moondata"><span id="moon_full"></span></td></tr>
+				<tr id="new_moon_second" style="display:none;"><td class="moonhdr">Next new moon</td><td class="moondata"><span class="moon_new"></span></td></tr>
 			</table>
 		</div>
 		<div id="almanac">
