@@ -1,0 +1,13 @@
+[Unit]
+Description=Astro Panel
+After=multi-user.target
+
+[Service]
+Type=idle
+User=nobody
+ExecStart=/usr/bin/python3 /var/www/astropanel/astropanel.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

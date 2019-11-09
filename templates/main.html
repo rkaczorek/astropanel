@@ -1,0 +1,284 @@
+<!--
+  Copyright(c) 2017 Radek Kaczorek  <rkaczorek AT gmail DOT com>
+
+ This library is free software; you can redistribute it and/or
+ modify it under the terms of the GNU Library General Public
+ License version 2 as published by the Free Software Foundation.
+
+ This library is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ Library General Public License for more details.
+
+ You should have received a copy of the GNU Library General Public License
+ along with this library; see the file COPYING.LIB.  If not, write to
+ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+ Boston, MA 02110-1301, USA.
+-->
+
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<meta http-equiv="Content-Language" content="en,en-us"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astronomy</title>
+    <link href="assets/css/bootstrap.min.css" rel="stylesheet" media="screen">
+    <link href="assets/css/bootstrap-responsive.min.css" rel="stylesheet">
+    <link href="assets/css/style.css" rel="stylesheet">
+    <script src="assets/js/jquery-3.2.1.min.js"></script>
+    <script src="assets/js/bootstrap.min.js"></script>
+    <script src="assets/js/socket.io.min.js"></script>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            var url = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port: '');
+            var socket = io.connect(url);
+            socket.on('celestialdata', function(data) {
+                $("#polaris_next_transit").html(data.polaris_next_transit);
+                $("#polaris_alt").html(data.polaris_alt);
+                $("#moon_phase").html(data.moon_phase + " (" + data.moon_light + "%)");
+                $("#moon_rise").html(data.moon_rise);
+                $("#moon_transit").html(data.moon_transit);
+                $("#moon_set").html(data.moon_set);
+                $("#moon_az").html(data.moon_az);
+                $("#moon_alt").html(data.moon_alt);
+                $("#moon_ra").html(data.moon_ra);
+                $("#moon_dec").html(data.moon_dec);
+                $("#moon_new").html(data.moon_new);
+                $("#moon_full").html(data.moon_full);
+                $("#sun_at_start").html(data.sun_at_start);
+                $("#sun_ct_start").html(data.sun_ct_start);
+                $("#sun_rise").html(data.sun_rise);
+                $("#sun_transit").html(data.sun_transit);
+                $("#sun_set").html(data.sun_set);
+                $("#sun_ct_end").html(data.sun_ct_end);
+                $("#sun_at_end").html(data.sun_at_end);
+                $("#sun_az").html(data.sun_az);
+                $("#sun_alt").html(data.sun_alt);
+                $("#sun_ra").html(data.sun_ra);
+                $("#sun_dec").html(data.sun_dec);
+                $("#sun_equinox").html(data.sun_equinox);
+                $(".sun_solstice").html(data.sun_solstice);
+                $("#mercury_rise").html(data.mercury_rise);
+                $("#mercury_transit").html(data.mercury_transit);
+                $("#mercury_set").html(data.mercury_set);
+                $("#mercury_az").html(data.mercury_az);
+                $("#mercury_alt").html(data.mercury_alt);
+                $("#venus_rise").html(data.venus_rise);
+                $("#venus_transit").html(data.venus_transit);
+                $("#venus_set").html(data.venus_set);
+                $("#venus_az").html(data.venus_az);
+                $("#venus_alt").html(data.venus_alt);
+                $("#mars_rise").html(data.mars_rise);
+                $("#mars_transit").html(data.mars_transit);
+                $("#mars_set").html(data.mars_set);
+                $("#mars_az").html(data.mars_az);
+                $("#mars_alt").html(data.mars_alt);
+                $("#jupiter_rise").html(data.jupiter_rise);
+                $("#jupiter_transit").html(data.jupiter_transit);
+                $("#jupiter_set").html(data.jupiter_set);
+                $("#jupiter_az").html(data.jupiter_az);
+                $("#jupiter_alt").html(data.jupiter_alt);
+                $("#saturn_rise").html(data.saturn_rise);
+                $("#saturn_transit").html(data.saturn_transit);
+                $("#saturn_set").html(data.saturn_set);
+                $("#saturn_az").html(data.saturn_az);
+                $("#saturn_alt").html(data.saturn_alt);
+                $("#uranus_rise").html(data.uranus_rise);
+                $("#uranus_transit").html(data.uranus_transit);
+                $("#uranus_set").html(data.uranus_set);
+                $("#uranus_az").html(data.uranus_az);
+                $("#uranus_alt").html(data.uranus_alt);
+                $("#neptune_rise").html(data.neptune_rise);
+                $("#neptune_transit").html(data.neptune_transit);
+                $("#neptune_set").html(data.neptune_set);
+                $("#neptune_az").html(data.neptune_az);
+                $("#neptune_alt").html(data.neptune_alt);
+
+				<!-- Set polaris marker -->
+				var pha = data.polaris_hour_angle;
+				pha_angle = 360 + pha * -1; <!-- reverse revolution for charting -->
+				pha_angle -= 180; <!-- set view as in polar finder scope -->
+				var rotation = "rotate(" + pha_angle + "deg)";
+				$("#polaris_marker").css("-ms-transform", rotation);
+				$("#polaris_marker").css("-webkit-transform", rotation);
+				$("#polaris_marker").css("transform", rotation);
+
+				<!-- Format polaris hour angle for display -->
+				var pha = data.polaris_hour_angle;
+				var phaH = String(parseInt(pha/15));
+				var phaMtmp = (pha/15 - phaH) * 60;
+				var phaM = String(parseInt(phaMtmp));
+				var phaS = String(parseInt((phaMtmp - phaM) * 60));
+				$("#pha").html(phaH.padStart(2,'0') + ":" + phaM.padStart(2,'0') + ":" + phaS.padStart(2,'0'));
+
+				<!-- Compute polaris cardinal positions -->
+				var pnt = data.polaris_next_transit.split(':');
+				var p9h = (parseInt(pnt[0]) - 6);
+				var p12h = (parseInt(pnt[0]) - 12);
+				var p3h = (parseInt(pnt[0]) - 18);
+				$("#polaris_next_3").html(p3h + ':' + pnt[1] + ':' + pnt[2]);
+				$("#polaris_next_12").html(p12h + ':' + pnt[1] + ':' + pnt[2]);
+				$("#polaris_next_9").html(p9h + ':' + pnt[1] + ':' + pnt[2]);
+
+
+				<!-- Indicate planets above horizon -->
+				if ( parseFloat(data.mercury_alt) > 25 ) {
+					$("#mercury").css("color", "#99cc00");
+				} else if ( parseFloat(data.mercury_alt) > 0 ) {
+					$("#mercury").css("color", "#ff9900");
+				} else {
+					$("#mercury").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.venus_alt) > 25 ) {
+					$("#venus").css("color", "#99cc00");
+				} else if ( parseFloat(data.venus_alt) > 0 ) {
+					$("#venus").css("color", "#ff9900");
+				} else {
+					$("#venus").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.mars_alt) > 25 ) {
+					$("#mars").css("color", "#99cc00");
+				} else if ( parseFloat(data.mars_alt) > 0 ) {
+					$("#mars").css("color", "#ff9900");
+				} else {
+					$("#mars").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.jupiter_alt) > 25 ) {
+					$("#jupiter").css("color", "#99cc00");
+				} else if ( parseFloat(data.jupiter_alt) > 0 ) {
+					$("#jupiter").css("color", "#ff9900");
+				} else {
+					$("#jupiter").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.saturn_alt) > 25 ) {
+					$("#saturn").css("color", "#99cc00");
+				} else if ( parseFloat(data.saturn_alt) > 0 ) {
+					$("#saturn").css("color", "#ff9900");
+				} else {
+					$("#saturn").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.uranus_alt) > 25 ) {
+					$("#uranus").css("color", "#99cc00");
+				} else if ( parseFloat(data.uranus_alt) > 0 ) {
+					$("#uranus").css("color", "#ff9900");
+				} else {
+					$("#uranus").css("color", "#fff");
+				}
+
+				if ( parseFloat(data.neptune_alt) > 25 ) {
+					$("#neptune").css("color", "#99cc00");
+				} else if ( parseFloat(data.neptune_alt) > 0 ) {
+					$("#neptune").css("color", "#ff9900");
+				} else {
+					$("#neptune").css("color", "#fff");
+				}
+
+				<!-- Set  Equinox and Solstice in order-->
+				var ss = new Date(data.sun_solstice);
+				var se = new Date(data.sun_equinox);
+				if (ss < se) { 
+					$("#sun_solstice_first").css("display", "");
+					$("#sun_solstice_second").css("display", "none");
+				} else {
+					$("#sun_solstice_first").css("display", "none");
+					$("#sun_solstice_second").css("display", "");
+				};
+            });
+        });
+    </script>
+</head>
+<body>
+	<div class="container">
+		<h1>Celestial Information</h1>
+		<div id="displayctl">
+			<button id="togglemap" onclick="togglemap();">Polar Finder</button>
+			<button id="toggleskymap" onclick="toggleskymap();">Moon Phase</button>
+			<button id="togglegpsdetails" onclick="togglegpsdetails();">Solar System</button>
+		</div>
+		<div id="polaris">
+			<div id="reticle">
+				<img id="polaris_marker" src="assets/img/polaris.png" />
+				<p id="legend" >View as in polar finder scope</p>
+			</div>
+			<h2>Polaris</h2>
+			<table>
+				<tr><td class="polarishdr">Hour Angle</td><td class="polarisdata"><span id="pha"></span></td></tr>
+				<tr><td class="polarishdr">Next Transit</td><td class="polarisdata"><span id="polaris_next_transit"></td></tr>
+				<tr><td class="polarishdr">At 3 o'clock</td><td class="polarisdata"><span id="polaris_next_3"></td></tr>
+				<tr><td class="polarishdr">At 12 o'clock</td><td class="polarisdata"><span id="polaris_next_12"></td></tr>
+				<tr><td class="polarishdr">At 9 o'clock</td><td class="polarisdata"><span id="polaris_next_9"></td></tr>
+				<tr><td class="polarishdr">Altitude</td><td class="polarisdata"><span id="polaris_alt"></td></tr>
+			</table>
+		</div>
+		<div id="moon">
+			<img src="assets/img/moon.png"/>
+			<h2>Moon</h2>
+			<p><span id="moon_phase">&nbsp;</span></p>
+			<table>
+				<tr><td class="moonhdr">Rise</td><td class="moondata"><span id="moon_rise"></span></td></tr>
+				<tr><td class="moonhdr">Transit</td><td class="moondata"><span id="moon_transit"></td></tr>
+				<tr><td class="moonhdr">Set</td><td class="moondata"><span id="moon_set"></td></tr>
+				<tr><td class="moonhdr">Azimuth</td><td class="moondata"><span id="moon_az"></td></tr>
+				<tr><td class="moonhdr">Altitude</td><td class="moondata"><span id="moon_alt"></td></tr>
+				<tr><td class="moonhdr">Right ascension</td><td class="moondata"><span id="moon_ra"></td></tr>
+				<tr><td class="moonhdr">Declination</td><td class="moondata"><span id="moon_dec"></td></tr>
+				<tr><td class="moonhdr">Next new moon</td><td class="moondata"><span id="moon_new"></span></td></tr>
+				<tr><td class="moonhdr">Next full moon</td><td class="moondata"><span id="moon_full"></span></td></tr>
+			</table>
+		</div>
+		<div id="almanac">
+			<img src="assets/img/sun.png"/>
+			<h2>Sun</h2>
+			<table>
+				<tr><td class="sunhdr">Start astronomical twilight</td><td class="sundata"><span id="sun_at_start"></td></tr>
+				<tr><td class="sunhdr">Start civil twilight</td><td class="sundata"><span id="sun_ct_start"></td></tr>
+				<tr><td class="sunhdr">Sunrise</td><td class="sundata"><span id="sun_rise"></td></tr>
+				<tr><td class="sunhdr">Transit</td><td class="sundata"><span id="sun_transit"></td></tr>
+				<tr><td class="sunhdr">Sunset</td><td class="sundata"><span id="sun_set"></td></tr>
+				<tr><td class="sunhdr">End civil twilight</td><td class="sundata"><span id="sun_ct_end"></td></tr>
+				<tr><td class="sunhdr">End astronomical twilight</td><td class="sundata"><span id="sun_at_end"></td></tr>
+				<tr><td class="sunhdr">Azimuth</td><td class="sundata"><span id="sun_az"></td></tr>
+				<tr><td class="sunhdr">Altitude</td><td class="sundata"><span id="sun_alt"></td></tr>
+				<tr><td class="sunhdr">Right ascension</td><td class="sundata"><span id="sun_ra"></td></tr>
+				<tr><td class="sunhdr">Declination</td><td class="sundata"><span id="sun_dec"></td></tr>
+				<tr id="sun_solstice_first"><td class="sunhdr">Solstice</td><td class="sundata"><span class="sun_solstice"></td></tr>
+				<tr><td class="sunhdr">Equinox</td><td class="sundata"><span id="sun_equinox"></td></tr>
+				<tr id="sun_solstice_second" style="display:none;"><td class="sunhdr">Solstice</td><td class="sundata"><span class="sun_solstice"></td></tr>
+			</table>
+			<h2>Solar System</h2>
+			<table>
+				<tr><td class="planetshdr">&nbsp;</td><td class="planetshdrdata">Rise</td><td class="planetshdrdata">Transit</td><td class="planetshdrdata">Set</td><td class="planetshdrdata">Azimuth</td><td class="planetshdrdata">Altitude</td></tr>
+				<tr id="mercury"><td class="planetshdr">Mercury</td><td class="planetsdata"><span id="mercury_rise"></td><td class="planetsdata"><span id="mercury_transit"></td><td class="planetsdata"><span id="mercury_set"></td><td class="planetsdata"><span id="mercury_az"></td><td class="planetsdata"><span id="mercury_alt"></td></tr>
+				<tr id="venus"><td class="planetshdr">Venus</td><td class="planetsdata"><span id="venus_rise"></td><td class="planetsdata"><span id="venus_transit"></td><td class="planetsdata"><span id="venus_set"></td><td class="planetsdata"><span id="venus_az"></td><td class="planetsdata"><span id="venus_alt"></td></tr>
+				<tr id="mars"><td class="planetshdr">Mars</td><td class="planetsdata"><span id="mars_rise"></td><td class="planetsdata"><span id="mars_transit"></td><td class="planetsdata"><span id="mars_set"></td><td class="planetsdata"><span id="mars_az"></td><td class="planetsdata"><span id="mars_alt"></td></tr>
+				<tr id="jupiter"><td class="planetshdr">Jupiter</td><td class="planetsdata"><span id="jupiter_rise"></td><td class="planetsdata"><span id="jupiter_transit"></td><td class="planetsdata"><span id="jupiter_set"></td><td class="planetsdata"><span id="jupiter_az"></td><td class="planetsdata"><span id="jupiter_alt"></td></tr>
+				<tr id="saturn"><td class="planetshdr">Saturn</td><td class="planetsdata"><span id="saturn_rise"></td><td class="planetsdata"><span id="saturn_transit"></td><td class="planetsdata"><span id="saturn_set"></td><td class="planetsdata"><span id="saturn_az"></td><td class="planetsdata"><span id="saturn_alt"></td></tr>
+				<tr id="uranus"><td class="planetshdr">Uranus</td><td class="planetsdata"><span id="uranus_rise"></td><td class="planetsdata"><span id="uranus_transit"></td><td class="planetsdata"><span id="uranus_set"></td><td class="planetsdata"><span id="uranus_az"></td><td class="planetsdata"><span id="uranus_alt"></td></tr>
+				<tr id="neptune"><td class="planetshdr">Neptune</td><td class="planetsdata"><span id="neptune_rise"></td><td class="planetsdata"><span id="neptune_transit"></td><td class="planetsdata"><span id="neptune_set"></td><td class="planetsdata"><span id="neptune_az"></td><td class="planetsdata"><span id="neptune_alt"></td></tr>
+			</table>
+		</div>
+	</div>
+	<script type="text/javascript">
+	function togglemap() {
+			document.getElementById("polaris").style.display="block";
+			document.getElementById("moon").style.display="none";
+			document.getElementById("almanac").style.display="none";
+	}
+	function toggleskymap() {
+			document.getElementById("polaris").style.display="none";
+			document.getElementById("moon").style.display="block";
+			document.getElementById("almanac").style.display="none";
+	}
+	function togglegpsdetails() {
+			document.getElementById("polaris").style.display="none";
+			document.getElementById("moon").style.display="none";
+			document.getElementById("almanac").style.display="block";
+	}
+	</script>
+</body>
+</html>
