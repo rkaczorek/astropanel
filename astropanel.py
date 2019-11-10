@@ -274,7 +274,7 @@ def background_thread():
 		print("elevation = 0")
 		print("use_gps = yes")
 		print()
-		
+
 		try:
 			gps_data = get_gps()
 			latitude = "%s" % gps_data[0]
