@@ -35,6 +35,11 @@ socketio = SocketIO(app)
 thread = None
 refresh_time = 10
 
+demo_latitude = '52.237049'
+demo_longitude = '21.017532'
+demo_elevation = 0
+
+
 class gpsTimeout(Exception):
 	def __init__(self, value):
 		self.value = value
@@ -214,30 +219,61 @@ def polaris_data(observer):
 	return polaris_data
 
 def background_thread():
-	print("Loading...")
 	# load configuration from file or set defaults
 	config_file = "astropanel.conf"
 	if os.path.isfile(config_file):
 		config = configparser.ConfigParser()
 		config.read(config_file)
-		try:
-			latitude = config['DEFAULT']['latitude']
-			longitude = config['DEFAULT']['longitude']
-			elevation = config['DEFAULT']['elevation']
+
+		if 'use_gps' in config['default']:
+			use_gps = config['default']['use_gps']
+		else:
+			use_gps = 'no'
+
+		if use_gps == 'yes':
+			try:
+				gps_data = get_gps()
+				latitude = "%s" % gps_data[0]
+				longitude = "%s" % gps_data[1]
+				elevation = "%f" % gps_data[2]
+				position_mode = 'GPS'
+				print("Loading values from GPS")
+			except gpsTimeout:
+				print('No GPS data available. Using defaults')
+				latitude = demo_latitude
+				longitude = demo_longitude
+				elevation = demo_elevation
+				position_mode = 'demo'
+				print("Loading values from defaults")
+		else:
+			if 'latitude' in config['default']:
+				latitude = config['default']['latitude']
+			else:
+				print ("no latitude value in config")
+				latitude = demo_latitude
+			if 'longitude' in config['default']:
+				longitude = config['default']['longitude']
+			else:
+				print ("no longitude value in config")
+				longitude = demo_longitude
+			if 'elevation' in config['default']:
+				elevation = config['default']['elevation']
+			else:
+				print ("no elevation value in config")
+				elevation = demo_elevation
+
 			position_mode = 'config'
-			print("from configuration file")
-		except:
-			print("Error reading configuration file. Exiting")
-			sys.exit(1)
+			print("Loading values from configuration file")
 	else:
 		print("No %s configuration file." % config_file)
 		print ("Create %s file if you don't use GPS." % config_file)
-		print("Otherwise demo mode will be activated.")
-		print("Example configuration for Warsaw, Poland:")
-		print("[DEFAULT]")
+		print("No GPS and no configuration file activates demo mode.")
+		print("Example configuration file for Warsaw, Poland:")
 		print("longitude = 21.017532")
 		print("latitude = 52.237049")
 		print("elevation = 0")
+		print("use_gps = yes")
+		print()
 		
 		try:
 			gps_data = get_gps()
@@ -245,14 +281,14 @@ def background_thread():
 			longitude = "%s" % gps_data[1]
 			elevation = "%f" % gps_data[2]
 			position_mode = 'GPS'
-			print("from GPS")
+			print("Loading values from GPS")
 		except gpsTimeout:
 			print('No GPS data available. Using defaults')
-			longitude = '21.017532'
-			latitude = '52.237049'
-			elevation = 0
+			latitude = demo_latitude
+			longitude = demo_longitude
+			elevation = demo_elevation
 			position_mode = 'demo'
-			print("from defaults")
+			print("Loading values from defaults")
 
 	# init observer
 	home = ephem.Observer()
@@ -339,7 +375,7 @@ def background_thread():
 
 def get_gps():
 	gps_data = []
-	timeout = datetime.timedelta(seconds=10)
+	timeout = datetime.timedelta(seconds=60)
 	loop_time = 1
 	gps_start_time = datetime.datetime.utcnow()
 	
