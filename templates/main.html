@@ -33,6 +33,10 @@
             var url = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port: '');
             var socket = io.connect(url);
             socket.on('celestialdata', function(data) {
+				$("#position_lat").html(data.latitude);
+				$("#position_lon").html(data.longitude);
+				$("#position_elev").html(data.elevation);
+				$("#position_mode").html(" (" + data.mode + ")");
                 $("#polaris_next_transit").html(data.polaris_next_transit);
                 $("#polaris_alt").html(data.polaris_alt);
                 $("#moon_phase").html(data.moon_phase + " (" + data.moon_light + "%)");
@@ -199,6 +203,8 @@
 					$("#new_moon_first").css("display", "none");
 					$("#new_moon_second").css("display", "");
 				};
+				
+				$("#position_refresh").css("display", "block");
             });
         });
     </script>
@@ -224,6 +230,13 @@
 				<tr><td class="polarishdr">At 12 o'clock</td><td class="polarisdata"><span id="polaris_next_12"></td></tr>
 				<tr><td class="polarishdr">At 9 o'clock</td><td class="polarisdata"><span id="polaris_next_9"></td></tr>
 				<tr><td class="polarishdr">Altitude</td><td class="polarisdata"><span id="polaris_alt"></td></tr>
+			</table>
+			<h2>Position <span id="position_mode"></span></h2>
+			<table>
+				<tr><td class="positionhdr">Latitude</td><td class="positiondata"><span id="position_lat">&nbsp;</span></td></tr>
+				<tr><td class="positionhdr">Longitude</td><td class="positiondata"><span id="position_lon">&nbsp;</td></tr>
+				<tr><td class="positionhdr">Elevation</td><td class="positiondata"><span id="position_elev">&nbsp;</td></tr>
+				<tr><td class="positionhdr">&nbsp;</td><td class="positiondata"><button id="position_refresh" onclick="window.location.href=window.location.href;">Refresh</button></td></tr>
 			</table>
 		</div>
 		<div id="moon">

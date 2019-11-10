@@ -19,9 +19,11 @@ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.
 """
 
-from flask import Flask, render_template, request
+from gps3 import gps3
+from gevent import monkey; monkey.patch_all()
+from flask import Flask, render_template
 from flask_socketio import SocketIO
-import sys, ephem, numpy, datetime, time
+import sys, os, configparser, ephem, numpy, datetime, time
 
 __author__ = 'Radek Kaczorek'
 __copyright__ = 'Copyright 2019, Radek Kaczorek'
@@ -31,8 +33,15 @@ __version__ = '1.0.0'
 app = Flask(__name__, static_folder='assets')
 socketio = SocketIO(app)
 thread = None
+refresh_time = 10
 
-def human_moon(observer):
+class gpsTimeout(Exception):
+	def __init__(self, value):
+		self.value = value
+	def __str__(self):
+		return repr(self.value)
+
+def moon_phase(observer):
 	target_date_utc = observer.date
 	target_date_local = ephem.localtime( target_date_utc ).date()
 	next_full = ephem.localtime( ephem.next_full_moon(target_date_utc) ).date()
@@ -204,21 +213,69 @@ def polaris_data(observer):
 
 	return polaris_data
 
-
 def background_thread():
-	while True:
-		t = datetime.datetime.utcnow()
+	print("Loading...")
+	# load configuration from file or set defaults
+	config_file = "astropanel.conf"
+	if os.path.isfile(config_file):
+		config = configparser.ConfigParser()
+		config.read(config_file)
+		try:
+			latitude = config['DEFAULT']['latitude']
+			longitude = config['DEFAULT']['longitude']
+			elevation = config['DEFAULT']['elevation']
+			position_mode = 'config'
+			print("from configuration file")
+		except:
+			print("Error reading configuration file. Exiting")
+			sys.exit(1)
+	else:
+		print("No %s configuration file." % config_file)
+		print ("Create %s file if you don't use GPS." % config_file)
+		print("Otherwise demo mode will be activated.")
+		print("Example configuration for Warsaw, Poland:")
+		print("[DEFAULT]")
+		print("longitude = 21.017532")
+		print("latitude = 52.237049")
+		print("elevation = 0")
+		
+		try:
+			gps_data = get_gps()
+			latitude = "%s" % gps_data[0]
+			longitude = "%s" % gps_data[1]
+			elevation = "%f" % gps_data[2]
+			position_mode = 'GPS'
+			print("from GPS")
+		except gpsTimeout:
+			print('No GPS data available. Using defaults')
+			longitude = '21.017532'
+			latitude = '52.237049'
+			elevation = 0
+			position_mode = 'demo'
+			print("from defaults")
 
-		home = ephem.Observer()
+	# init observer
+	home = ephem.Observer()
+
+	# set geo position
+	home.lat = latitude
+	home.lon = longitude
+	home.elevation = float(elevation)
+
+	while True:
+		# update time
+		t = datetime.datetime.utcnow()
 		home.date = t
-		home.lat = '54.23'
-		home.lon = '24.23'
 
 		socketio.emit('celestialdata', {
+		'latitude': "%s" % home.lat,
+		'longitude': "%s" % home.lon,
+		'elevation': "%s" % home.elevation,
+		'mode': position_mode,
 		'polaris_hour_angle': polaris_data(home)[0],
 		'polaris_next_transit': "%s" % polaris_data(home)[1],
 		'polaris_alt': "%.2f°" % numpy.degrees(polaris_data(home)[2]),
-		'moon_phase': "%s" % human_moon(home),
+		'moon_phase': "%s" % moon_phase(home),
 		'moon_light': "%d" % ephem.Moon(home).phase,
 		'moon_rise': "%s" % body_positions(home,ephem.Moon(home))[0],
 		'moon_transit': "%s" % body_positions(home,ephem.Moon(home))[1],
@@ -227,8 +284,8 @@ def background_thread():
 		'moon_alt': "%.2f°" % numpy.degrees(ephem.Moon(home).alt),
 		'moon_ra': "%s" % ephem.Moon(home).ra,
 		'moon_dec': "%s" % ephem.Moon(home).dec,
-		'moon_new': "%s" % ephem.localtime(ephem.next_new_moon(t)).strftime("%Y/%m/%d %H:%M:%S"),
-		'moon_full': "%s" % ephem.localtime(ephem.next_full_moon(t)).strftime("%Y/%m/%d %H:%M:%S"),
+		'moon_new': "%s" % ephem.localtime(ephem.next_new_moon(t)).strftime("%Y-%m-%d %H:%M:%S"),
+		'moon_full': "%s" % ephem.localtime(ephem.next_full_moon(t)).strftime("%Y-%m-%d %H:%M:%S"),
 		'sun_at_start': get_sun_twilights(home)[2][0],
 		'sun_ct_start': get_sun_twilights(home)[0][0],
 		'sun_rise': "%s" % body_positions(home,ephem.Sun(home))[0],
@@ -240,8 +297,8 @@ def background_thread():
 		'sun_alt': "%.2f°" % numpy.degrees(ephem.Sun(home).alt),
 		'sun_ra': "%s" % ephem.Sun(home).ra,
 		'sun_dec': "%s" % ephem.Sun(home).dec,
-		'sun_equinox': "%s" % ephem.localtime(ephem.next_equinox(t)).strftime("%Y/%m/%d %H:%M:%S"),
-		'sun_solstice': "%s" % ephem.localtime(ephem.next_solstice(t)).strftime("%Y/%m/%d %H:%M:%S"),
+		'sun_equinox': "%s" % ephem.localtime(ephem.next_equinox(t)).strftime("%Y-%m-%d %H:%M:%S"),
+		'sun_solstice': "%s" % ephem.localtime(ephem.next_solstice(t)).strftime("%Y-%m-%d %H:%M:%S"),
 		'mercury_rise': "%s" % body_positions(home,ephem.Mercury(home))[0],
 		'mercury_transit': "%s" % body_positions(home,ephem.Mercury(home))[1],
 		'mercury_set': "%s" % body_positions(home,ephem.Mercury(home))[2],
@@ -278,12 +335,40 @@ def background_thread():
 		'neptune_az': "%.2f°" % numpy.degrees(ephem.Neptune(home).az),
 		'neptune_alt': "%.2f°" % numpy.degrees(ephem.Neptune(home).alt)
 		})
-		socketio.sleep(10)
+		socketio.sleep(refresh_time)
+
+def get_gps():
+	gps_data = []
+	timeout = datetime.timedelta(seconds=10)
+	loop_time = 1
+	gps_start_time = datetime.datetime.utcnow()
+	
+	gpsd_socket = gps3.GPSDSocket()
+	gpsd_socket.connect()
+	gpsd_socket.watch()
+	data_stream = gps3.DataStream()
+
+	for new_data in gpsd_socket:
+		waiting_time = datetime.datetime.utcnow() - gps_start_time
+		if waiting_time > timeout:
+			raise gpsTimeout("GPS timeout")
+		if new_data:
+			data_stream.unpack(new_data)
+			if data_stream.TPV['lat'] != 'n/a' and int(data_stream.TPV['mode']) == 3:
+				gps_data.append(data_stream.TPV['lat'])
+				gps_data.append(data_stream.TPV['lon'])
+				gps_data.append(data_stream.TPV['alt'])
+				gps_data.append(data_stream.TPV['time'])
+				break
+		else:
+			time.sleep(loop_time)
+
+	gpsd_socket.close()
+	return gps_data
 
 def shut_down():
     print('Keyboard interrupt received\nTerminated by user\nGood Bye.\n')
     sys.exit()
-
 
 @app.route('/')
 def main():
@@ -295,8 +380,12 @@ def handle_connect():
 	if thread is None:
 		thread = socketio.start_background_task(target=background_thread)
 
-if __name__ == '__main__':
+@socketio.on('disconnect')
+def handle_disconnect():
+	global thread
+	thread = None
 
+if __name__ == '__main__':
 	try:
 		socketio.run(app, host='0.0.0.0', port = 8626, debug=False)
 	except KeyboardInterrupt:

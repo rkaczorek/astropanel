@@ -81,7 +81,7 @@ table, th, td {
 #legend {
 	text-align: center;
 	font-family: 'Roboto Light', Arial, Helvetica;
-	font-size: 0.90em;
+	font-size: 0.80em;
 }
 
 #polaris, #moon, #almanac {
@@ -107,6 +107,31 @@ table, th, td {
 
 .polarisdata {
 	text-align: right;
+}
+
+.positionhdr {
+	width: 110px;
+}
+
+.positiondata {
+	text-align: right;
+}
+
+#position_mode {
+	font-weight: normal;
+}
+
+#position_refresh {
+	width: 60px;
+	font-size: 0.80em;
+	padding: 0px;
+	border: none;
+	display: none;
+}
+
+#position_refresh:hover {
+	background-color: #99cc00;
+	color: white;
 }
 
 #moon {
