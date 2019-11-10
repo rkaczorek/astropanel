@@ -378,7 +378,7 @@ def get_gps():
 	timeout = datetime.timedelta(seconds=60)
 	loop_time = 1
 	gps_start_time = datetime.datetime.utcnow()
-	
+
 	gpsd_socket = gps3.GPSDSocket()
 	gpsd_socket.connect()
 	gpsd_socket.watch()

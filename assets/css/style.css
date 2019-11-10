@@ -29,7 +29,7 @@ body {
 }
 
 h1 {
-	background-image: url("/assets/img/astropanel.svg");
+	background-image: url("./../img/astropanel.svg");
 	background-repeat: no-repeat;
 	background-position: 5px 5px;
 	background-color: rgb(110, 132, 163);
@@ -57,7 +57,7 @@ a:hover {
 
 button {
 	margin-top: 5px;
-	width: 157px;
+	width: 117px;
 }
 
 .warning {
@@ -84,7 +84,7 @@ table, th, td {
 	font-size: 0.80em;
 }
 
-#polaris, #moon, #almanac {
+#polaris, #moon, #sun, #planets {
 	width: 480px;
 	margin-top: 10px;
 }
@@ -115,6 +115,10 @@ table, th, td {
 
 .positiondata {
 	text-align: right;
+}
+
+#position {
+	display:none;
 }
 
 #position_refresh {
@@ -148,11 +152,11 @@ table, th, td {
 	text-align: right;
 }
 
-#almanac {
-	display:none;
+#sun {
+        display:none;
 }
 
-#almanac img {
+#sun img {
 	width: 150px;
 	margin: 50px 20px 0px 0px;
 	float: left;
@@ -164,6 +168,14 @@ table, th, td {
 
 .sundata {
 	text-align: right;
+}
+
+#planets {
+        display:none;
+}
+
+#planets img {
+	margin-top: 20px;
 }
 
 .planetshdr {
