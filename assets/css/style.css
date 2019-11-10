@@ -117,10 +117,6 @@ table, th, td {
 	text-align: right;
 }
 
-#position_mode {
-	font-weight: normal;
-}
-
 #position_refresh {
 	width: 60px;
 	font-size: 0.80em;

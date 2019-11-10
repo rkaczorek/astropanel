@@ -36,7 +36,6 @@
 		$("#position_lat").html(data.latitude);
 		$("#position_lon").html(data.longitude);
 		$("#position_elev").html(data.elevation);
-		$("#position_mode").html(" (" + data.mode + ")");
                 $("#polaris_next_transit").html(data.polaris_next_transit);
                 $("#polaris_alt").html(data.polaris_alt);
                 $("#moon_phase").html(data.moon_phase + " (" + data.moon_light + "%)");
@@ -97,6 +96,9 @@
                 $("#neptune_set").html(data.neptune_set);
                 $("#neptune_az").html(data.neptune_az);
                 $("#neptune_alt").html(data.neptune_alt);
+
+		<!-- Set mode -->
+		$("#position_mode").attr("title", data.position_mode);
 
 		<!-- Set polaris marker -->
 		var pha = data.polaris_hour_angle;
@@ -230,7 +232,7 @@
 				<tr><td class="polarishdr">At 9 o'clock</td><td class="polarisdata"><span id="polaris_next_9"></td></tr>
 				<tr><td class="polarishdr">Altitude</td><td class="polarisdata"><span id="polaris_alt"></td></tr>
 			</table>
-			<h2>Position <span id="position_mode"></span></h2>
+			<h2 id="position_mode">Position</h2>
 			<table>
 				<tr><td class="positionhdr">Latitude</td><td class="positiondata"><span id="position_lat">&nbsp;</span></td></tr>
 				<tr><td class="positionhdr">Longitude</td><td class="positiondata"><span id="position_lon">&nbsp;</td></tr>
