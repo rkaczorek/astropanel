@@ -220,7 +220,7 @@ def polaris_data(observer):
 
 def background_thread():
 	# load configuration from file or set defaults
-	config_file = "astropanel.conf"
+	config_file = "/etc/astropanel.conf"
 	if os.path.isfile(config_file):
 		config = configparser.ConfigParser()
 		config.read(config_file)
