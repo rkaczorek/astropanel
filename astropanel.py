@@ -235,7 +235,7 @@ def background_thread():
 				gps_data = get_gps()
 				latitude = "%s" % gps_data[0]
 				longitude = "%s" % gps_data[1]
-				elevation = "%f" % gps_data[2]
+				elevation = "%.2f" % gps_data[2]
 				position_mode = 'GPS'
 				print("Loading values from GPS")
 			except gpsTimeout:
@@ -279,7 +279,7 @@ def background_thread():
 			gps_data = get_gps()
 			latitude = "%s" % gps_data[0]
 			longitude = "%s" % gps_data[1]
-			elevation = "%f" % gps_data[2]
+			elevation = "%.2f" % gps_data[2]
 			position_mode = 'GPS'
 			print("Loading values from GPS")
 		except gpsTimeout:
@@ -306,7 +306,7 @@ def background_thread():
 		socketio.emit('celestialdata', {
 		'latitude': "%s" % home.lat,
 		'longitude': "%s" % home.lon,
-		'elevation': "%s" % home.elevation,
+		'elevation': "%.2f" % home.elevation,
 		'mode': position_mode,
 		'polaris_hour_angle': polaris_data(home)[0],
 		'polaris_next_transit': "%s" % polaris_data(home)[1],

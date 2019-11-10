@@ -30,13 +30,13 @@
     <script src="assets/js/socket.io.min.js"></script>
     <script type="text/javascript">
         $(document).ready(function() {
-            var url = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port: '');
-            var socket = io.connect(url);
-            socket.on('celestialdata', function(data) {
-				$("#position_lat").html(data.latitude);
-				$("#position_lon").html(data.longitude);
-				$("#position_elev").html(data.elevation);
-				$("#position_mode").html(" (" + data.mode + ")");
+	var url = location.protocol + '//' + location.hostname + (location.port ? ':' + location.port: '');
+	var socket = io.connect(url, { path: location.pathname + 'socket.io' });
+	socket.on('celestialdata', function(data) {
+		$("#position_lat").html(data.latitude);
+		$("#position_lon").html(data.longitude);
+		$("#position_elev").html(data.elevation);
+		$("#position_mode").html(" (" + data.mode + ")");
                 $("#polaris_next_transit").html(data.polaris_next_transit);
                 $("#polaris_alt").html(data.polaris_alt);
                 $("#moon_phase").html(data.moon_phase + " (" + data.moon_light + "%)");
@@ -98,113 +98,112 @@
                 $("#neptune_az").html(data.neptune_az);
                 $("#neptune_alt").html(data.neptune_alt);
 
-				<!-- Set polaris marker -->
-				var pha = data.polaris_hour_angle;
-				pha_angle = 360 + pha * -1; <!-- reverse revolution for charting -->
-				pha_angle -= 180; <!-- set view as in polar finder scope -->
-				var rotation = "rotate(" + pha_angle + "deg)";
-				$("#polaris_marker").css("-ms-transform", rotation);
-				$("#polaris_marker").css("-webkit-transform", rotation);
-				$("#polaris_marker").css("transform", rotation);
+		<!-- Set polaris marker -->
+		var pha = data.polaris_hour_angle;
+		pha_angle = 360 + pha * -1; <!-- reverse revolution for charting -->
+		pha_angle -= 180; <!-- set view as in polar finder scope -->
+		var rotation = "rotate(" + pha_angle + "deg)";
+		$("#polaris_marker").css("-ms-transform", rotation);
+		$("#polaris_marker").css("-webkit-transform", rotation);
+		$("#polaris_marker").css("transform", rotation);
 
-				<!-- Format polaris hour angle for display -->
-				var pha = data.polaris_hour_angle;
-				var phaH = String(parseInt(pha/15));
-				var phaMtmp = (pha/15 - phaH) * 60;
-				var phaM = String(parseInt(phaMtmp));
-				var phaS = String(parseInt((phaMtmp - phaM) * 60));
-				$("#pha").html(phaH.padStart(2,'0') + ":" + phaM.padStart(2,'0') + ":" + phaS.padStart(2,'0'));
+		<!-- Format polaris hour angle for display -->
+		var pha = data.polaris_hour_angle;
+		var phaH = String(parseInt(pha/15));
+		var phaMtmp = (pha/15 - phaH) * 60;
+		var phaM = String(parseInt(phaMtmp));
+		var phaS = String(parseInt((phaMtmp - phaM) * 60));
+		$("#pha").html(phaH.padStart(2,'0') + ":" + phaM.padStart(2,'0') + ":" + phaS.padStart(2,'0'));
 
-				<!-- Compute polaris cardinal positions -->
-				var pnt = data.polaris_next_transit.split(':');
-				var p9h = (parseInt(pnt[0]) - 6);
-				var p12h = (parseInt(pnt[0]) - 12);
-				var p3h = (parseInt(pnt[0]) - 18);
-				$("#polaris_next_3").html(p3h + ':' + pnt[1] + ':' + pnt[2]);
-				$("#polaris_next_12").html(p12h + ':' + pnt[1] + ':' + pnt[2]);
-				$("#polaris_next_9").html(p9h + ':' + pnt[1] + ':' + pnt[2]);
+		<!-- Compute polaris cardinal positions -->
+		var pnt = data.polaris_next_transit.split(':');
+		var p9h = (parseInt(pnt[0]) - 6);
+		var p12h = (parseInt(pnt[0]) - 12);
+		var p3h = (parseInt(pnt[0]) - 18);
+		$("#polaris_next_3").html(p3h + ':' + pnt[1] + ':' + pnt[2]);
+		$("#polaris_next_12").html(p12h + ':' + pnt[1] + ':' + pnt[2]);
+		$("#polaris_next_9").html(p9h + ':' + pnt[1] + ':' + pnt[2]);
 
+		<!-- Indicate planets above horizon -->
+		if ( parseFloat(data.mercury_alt) > 25 ) {
+			$("#mercury").css("color", "#99cc00");
+		} else if ( parseFloat(data.mercury_alt) > 0 ) {
+			$("#mercury").css("color", "#ff9900");
+		} else {
+			$("#mercury").css("color", "#fff");
+		}
 
-				<!-- Indicate planets above horizon -->
-				if ( parseFloat(data.mercury_alt) > 25 ) {
-					$("#mercury").css("color", "#99cc00");
-				} else if ( parseFloat(data.mercury_alt) > 0 ) {
-					$("#mercury").css("color", "#ff9900");
-				} else {
-					$("#mercury").css("color", "#fff");
-				}
+		if ( parseFloat(data.venus_alt) > 25 ) {
+			$("#venus").css("color", "#99cc00");
+		} else if ( parseFloat(data.venus_alt) > 0 ) {
+			$("#venus").css("color", "#ff9900");
+		} else {
+			$("#venus").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.venus_alt) > 25 ) {
-					$("#venus").css("color", "#99cc00");
-				} else if ( parseFloat(data.venus_alt) > 0 ) {
-					$("#venus").css("color", "#ff9900");
-				} else {
-					$("#venus").css("color", "#fff");
-				}
+		if ( parseFloat(data.mars_alt) > 25 ) {
+			$("#mars").css("color", "#99cc00");
+		} else if ( parseFloat(data.mars_alt) > 0 ) {
+			$("#mars").css("color", "#ff9900");
+		} else {
+			$("#mars").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.mars_alt) > 25 ) {
-					$("#mars").css("color", "#99cc00");
-				} else if ( parseFloat(data.mars_alt) > 0 ) {
-					$("#mars").css("color", "#ff9900");
-				} else {
-					$("#mars").css("color", "#fff");
-				}
+		if ( parseFloat(data.jupiter_alt) > 25 ) {
+			$("#jupiter").css("color", "#99cc00");
+		} else if ( parseFloat(data.jupiter_alt) > 0 ) {
+			$("#jupiter").css("color", "#ff9900");
+		} else {
+			$("#jupiter").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.jupiter_alt) > 25 ) {
-					$("#jupiter").css("color", "#99cc00");
-				} else if ( parseFloat(data.jupiter_alt) > 0 ) {
-					$("#jupiter").css("color", "#ff9900");
-				} else {
-					$("#jupiter").css("color", "#fff");
-				}
+		if ( parseFloat(data.saturn_alt) > 25 ) {
+			$("#saturn").css("color", "#99cc00");
+		} else if ( parseFloat(data.saturn_alt) > 0 ) {
+			$("#saturn").css("color", "#ff9900");
+		} else {
+			$("#saturn").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.saturn_alt) > 25 ) {
-					$("#saturn").css("color", "#99cc00");
-				} else if ( parseFloat(data.saturn_alt) > 0 ) {
-					$("#saturn").css("color", "#ff9900");
-				} else {
-					$("#saturn").css("color", "#fff");
-				}
+		if ( parseFloat(data.uranus_alt) > 25 ) {
+			$("#uranus").css("color", "#99cc00");
+		} else if ( parseFloat(data.uranus_alt) > 0 ) {
+			$("#uranus").css("color", "#ff9900");
+		} else {
+			$("#uranus").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.uranus_alt) > 25 ) {
-					$("#uranus").css("color", "#99cc00");
-				} else if ( parseFloat(data.uranus_alt) > 0 ) {
-					$("#uranus").css("color", "#ff9900");
-				} else {
-					$("#uranus").css("color", "#fff");
-				}
+		if ( parseFloat(data.neptune_alt) > 25 ) {
+			$("#neptune").css("color", "#99cc00");
+		} else if ( parseFloat(data.neptune_alt) > 0 ) {
+			$("#neptune").css("color", "#ff9900");
+		} else {
+			$("#neptune").css("color", "#fff");
+		}
 
-				if ( parseFloat(data.neptune_alt) > 25 ) {
-					$("#neptune").css("color", "#99cc00");
-				} else if ( parseFloat(data.neptune_alt) > 0 ) {
-					$("#neptune").css("color", "#ff9900");
-				} else {
-					$("#neptune").css("color", "#fff");
-				}
+		<!-- Set  Equinox and Solstice in order-->
+		var ss = new Date(data.sun_solstice);
+		var se = new Date(data.sun_equinox);
+		if (ss < se) { 
+			$("#sun_solstice_first").css("display", "");
+			$("#sun_solstice_second").css("display", "none");
+		} else {
+			$("#sun_solstice_first").css("display", "none");
+			$("#sun_solstice_second").css("display", "");
+		};
 
-				<!-- Set  Equinox and Solstice in order-->
-				var ss = new Date(data.sun_solstice);
-				var se = new Date(data.sun_equinox);
-				if (ss < se) { 
-					$("#sun_solstice_first").css("display", "");
-					$("#sun_solstice_second").css("display", "none");
-				} else {
-					$("#sun_solstice_first").css("display", "none");
-					$("#sun_solstice_second").css("display", "");
-				};
-
-				<!-- Set  New Moon and Full Moon in order-->
-				var nm = new Date(data.moon_new);
-				var fm = new Date(data.moon_full);
-				if (nm < fm) { 
-					$("#new_moon_first").css("display", "");
-					$("#new_moon_second").css("display", "none");
-				} else {
-					$("#new_moon_first").css("display", "none");
-					$("#new_moon_second").css("display", "");
-				};
+		<!-- Set  New Moon and Full Moon in order-->
+		var nm = new Date(data.moon_new);
+		var fm = new Date(data.moon_full);
+		if (nm < fm) { 
+			$("#new_moon_first").css("display", "");
+			$("#new_moon_second").css("display", "none");
+		} else {
+			$("#new_moon_first").css("display", "none");
+			$("#new_moon_second").css("display", "");
+		};
 				
-				$("#position_refresh").css("display", "block");
+		$("#position_refresh").css("display", "block");
             });
         });
     </script>
