@@ -19,26 +19,23 @@ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.
 """
 
+DEBUG = True
+
 from gps3 import gps3
 from gevent import monkey; monkey.patch_all()
 from flask import Flask, render_template
 from flask_socketio import SocketIO
-import sys, os, configparser, ephem, numpy, datetime, time
+import sys, os, configparser, re, ephem, numpy, datetime, time
 
 __author__ = 'Radek Kaczorek'
 __copyright__ = 'Copyright 2019, Radek Kaczorek'
 __license__ = 'GPL-3'
-__version__ = '1.0.0'
+__version__ = '2.0.0'
 
 app = Flask(__name__, static_folder='assets')
 socketio = SocketIO(app)
 thread = None
 refresh_time = 10
-
-demo_latitude = '52.237049'
-demo_longitude = '21.017532'
-demo_elevation = 0
-
 
 class gpsTimeout(Exception):
 	def __init__(self, value):
@@ -218,85 +215,164 @@ def polaris_data(observer):
 
 	return polaris_data
 
-def background_thread():
-	# load configuration from file or set defaults
+def get_localisation():
+	localisation = []
+
+	# localisation is order: user weather file - system weather file - config file - GPS
+	user_weather_file = "/home/astroberry/.config/lxpanel/LXDE-astroberry/panels/panel"
+	system_weather_file  = "/etc/xdg/lxpanel/LXDE-astroberry/panels/panel"
 	config_file = "/etc/astropanel.conf"
+
 	if os.path.isfile(config_file):
 		config = configparser.ConfigParser()
 		config.read(config_file)
-
-		if 'use_gps' in config['default']:
-			use_gps = config['default']['use_gps']
-		else:
-			use_gps = 'no'
-
-		if use_gps == 'yes':
-			try:
-				gps_data = get_gps()
-				latitude = "%s" % gps_data[0]
-				longitude = "%s" % gps_data[1]
-				elevation = "%.2f" % gps_data[2]
-				position_mode = 'GPS'
-				print("Loading values from GPS")
-			except gpsTimeout:
-				print('No GPS data available. Using defaults')
-				latitude = demo_latitude
-				longitude = demo_longitude
-				elevation = demo_elevation
-				position_mode = 'demo'
-				print("Loading values from defaults")
-		else:
-			if 'latitude' in config['default']:
-				latitude = config['default']['latitude']
-			else:
-				print ("no latitude value in config")
-				latitude = demo_latitude
-			if 'longitude' in config['default']:
-				longitude = config['default']['longitude']
-			else:
-				print ("no longitude value in config")
-				longitude = demo_longitude
-			if 'elevation' in config['default']:
-				elevation = config['default']['elevation']
-			else:
-				print ("no elevation value in config")
-				elevation = demo_elevation
-
-			position_mode = 'config'
+	
+	if os.path.isfile(user_weather_file):
+		with open(user_weather_file,'r') as file:
+			for line in file:
+				latitude_line = re.findall('latitude=.*', line)
+				longitude_line = re.findall('longitude=.*', line)
+				city_line = re.findall('city=.*', line)
+				alias_line = re.findall('alias=.*', line)
+				if latitude_line:
+					latitude = latitude_line[0].split('=')[1]
+				if longitude_line:
+					longitude = longitude_line[0].split('=')[1]
+				elevation = 0
+				if city_line:
+					city = city_line[0].split('=')[1]
+				if alias_line:
+					alias = alias_line[0].split('=')[1]
+		position_mode = user_weather_file
+		if DEBUG:
+			print("Loading values from user weather file")
+			print(position_mode)
+			print(latitude)
+			print(longitude)
+			print(elevation)
+			print(city)
+			print(alias)
+		localisation.append(latitude)
+		localisation.append(longitude)
+		localisation.append(elevation)
+		localisation.append(city)
+		localisation.append(alias)
+		localisation.append(position_mode)
+		return localisation
+	elif os.path.isfile(system_weather_file):
+		with open(system_weather_file,'r') as file:
+			for line in file:
+				latitude_line = re.findall('latitude=.*', line)
+				longitude_line = re.findall('longitude=.*', line)
+				city_line = re.findall('city=.*', line)
+				alias_line = re.findall('alias=.*', line)
+				if latitude_line:
+					latitude = latitude_line[0].split('=')[1]
+				if longitude_line:
+					longitude = longitude_line[0].split('=')[1]
+				elevation = 0
+				if city_line:
+					city = city_line[0].split('=')[1]
+				if alias_line:
+					alias = alias_line[0].split('=')[1]
+		position_mode = system_weather_file
+		if DEBUG:
+			print("Loading values from system weather file")
+			print(position_mode)
+			print(latitude)
+			print(longitude)
+			print(elevation)
+			print(city)
+			print(alias)
+		localisation.append(latitude)
+		localisation.append(longitude)
+		localisation.append(elevation)
+		localisation.append(city)
+		localisation.append(alias)
+		localisation.append(position_mode)
+		return localisation
+	elif 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
+		latitude = config['default']['latitude']
+		longitude = config['default']['longitude']
+		elevation = config['default']['elevation']
+		city = config['default']['city']
+		alias = config['default']['alias']
+		position_mode = config_file
+		if DEBUG:
 			print("Loading values from configuration file")
+			print(position_mode)
+			print(latitude)
+			print(longitude)
+			print(elevation)
+			print(city)
+			print(alias)
+		localisation.append(latitude)
+		localisation.append(longitude)
+		localisation.append(elevation)
+		localisation.append(city)
+		localisation.append(alias)
+		localisation.append(position_mode)
+		return localisation
 	else:
-		print("No %s configuration file." % config_file)
-		print ("Create %s file if you don't use GPS." % config_file)
-		print("No GPS and no configuration file activates demo mode.")
-		print("Example configuration file for Warsaw, Poland:")
-		print("longitude = 21.017532")
-		print("latitude = 52.237049")
-		print("elevation = 0")
-		print("use_gps = yes")
-		print()
-
 		try:
+			print('Trying GPS...')
 			gps_data = get_gps()
 			latitude = "%s" % gps_data[0]
 			longitude = "%s" % gps_data[1]
 			elevation = "%.2f" % gps_data[2]
-			position_mode = 'GPS'
-			print("Loading values from GPS")
+			city = ''
+			alias = ''
+			position_mode = 'gps'
+			if DEBUG:
+				print("Loading values from GPS")
+				print(position_mode)
+				print(latitude)
+				print(longitude)
+				print(elevation)
+				print(city)
+				print(alias)
+			localisation.append(latitude)
+			localisation.append(longitude)
+			localisation.append(elevation)
+			localisation.append(city)
+			localisation.append(alias)
+			localisation.append(position_mode)
+			return localisation
 		except gpsTimeout:
-			print('No GPS data available. Using defaults')
-			latitude = demo_latitude
-			longitude = demo_longitude
-			elevation = demo_elevation
+			# demo localisation
+			latitude = '52.237049'
+			longitude = '21.017532'
+			elevation = 0
+			city = 'Warsaw'
+			alias = 'Warsaw'
 			position_mode = 'demo'
-			print("Loading values from defaults")
+			if DEBUG:
+				print("No localisation data available. Loading defaults")
+				print(latitude)
+				print(longitude)
+				print(elevation)
+				print(city)
+				print(alias)
+				print(position_mode)
+			localisation.append(latitude)
+			localisation.append(longitude)
+			localisation.append(elevation)
+			localisation.append(city)
+			localisation.append(alias)
+			localisation.append(position_mode)
+			return localisation
+
+def background_thread():
+
+	localisation = get_localisation()
 
 	# init observer
 	home = ephem.Observer()
 
 	# set geo position
-	home.lat = latitude
-	home.lon = longitude
-	home.elevation = float(elevation)
+	home.lat = localisation[0]
+	home.lon = localisation[1]
+	home.elevation = float(localisation[2])
 
 	while True:
 		# update time
@@ -307,7 +383,9 @@ def background_thread():
 		'latitude': "%s" % home.lat,
 		'longitude': "%s" % home.lon,
 		'elevation': "%.2f" % home.elevation,
-		'mode': position_mode,
+		'city': localisation[3],
+		'alias': localisation[4],
+		'mode': localisation[5],
 		'polaris_hour_angle': polaris_data(home)[0],
 		'polaris_next_transit': "%s" % polaris_data(home)[1],
 		'polaris_alt': "%.2f°" % numpy.degrees(polaris_data(home)[2]),

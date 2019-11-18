@@ -109,31 +109,6 @@ table, th, td {
 	text-align: right;
 }
 
-.positionhdr {
-	width: 110px;
-}
-
-.positiondata {
-	text-align: right;
-}
-
-#position {
-	display:none;
-}
-
-#position_refresh {
-	width: 60px;
-	font-size: 0.80em;
-	padding: 0px;
-	border: none;
-	display: none;
-}
-
-#position_refresh:hover {
-	background-color: #99cc00;
-	color: white;
-}
-
 #moon {
 	display:none;
 }
