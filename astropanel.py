@@ -19,7 +19,7 @@ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.
 """
 
-DEBUG = True
+DEBUG = False
 
 from gps3 import gps3
 from gevent import monkey; monkey.patch_all()
@@ -43,7 +43,7 @@ class gpsTimeout(Exception):
 	def __str__(self):
 		return repr(self.value)
 
-def moon_phase(observer):
+def get_moon_phase(observer):
 	target_date_utc = observer.date
 	target_date_local = ephem.localtime( target_date_utc ).date()
 	next_full = ephem.localtime( ephem.next_full_moon(target_date_utc) ).date()
@@ -72,7 +72,7 @@ def moon_phase(observer):
 	elif previous_last_quarter < next_new < next_first_quarter < next_full < next_last_quarter:
 		return 'Waning Crescent'
 
-def body_positions(observer, body):
+def get_body_positions(observer, body):
 	positions = []
 
 	# test for always below horizon or always above horizon
@@ -156,7 +156,7 @@ def get_sun_twilights(observer):
 	for twi in twilights:
 		observer.horizon = twi[0]
 		try:
-			rising_setting = body_positions(observer,ephem.Sun(observer))
+			rising_setting = get_body_positions(observer,ephem.Sun(observer))
 			results.append((rising_setting[0], rising_setting[2]))
 		except ephem.AlwaysUpError:
 			results.append(('n/a', 'n/a'))
@@ -166,8 +166,7 @@ def get_sun_twilights(observer):
 
 	return results
 
-def polaris_data(observer):
-
+def get_polaris_data(observer):
 	polaris_data = []
 
 	"""
@@ -363,7 +362,6 @@ def get_localisation():
 			return localisation
 
 def background_thread():
-
 	localisation = get_localisation()
 
 	# init observer
@@ -379,6 +377,8 @@ def background_thread():
 		t = datetime.datetime.utcnow()
 		home.date = t
 
+		polaris_data = get_polaris_data(home)
+
 		socketio.emit('celestialdata', {
 		'latitude': "%s" % home.lat,
 		'longitude': "%s" % home.lon,
@@ -386,14 +386,14 @@ def background_thread():
 		'city': localisation[3],
 		'alias': localisation[4],
 		'mode': localisation[5],
-		'polaris_hour_angle': polaris_data(home)[0],
-		'polaris_next_transit': "%s" % polaris_data(home)[1],
-		'polaris_alt': "%.2f°" % numpy.degrees(polaris_data(home)[2]),
-		'moon_phase': "%s" % moon_phase(home),
+		'polaris_hour_angle': polaris_data[0],
+		'polaris_next_transit': "%s" % polaris_data[1],
+		'polaris_alt': "%.2f°" % numpy.degrees(polaris_data[2]),
+		'moon_phase': "%s" % get_moon_phase(home),
 		'moon_light': "%d" % ephem.Moon(home).phase,
-		'moon_rise': "%s" % body_positions(home,ephem.Moon(home))[0],
-		'moon_transit': "%s" % body_positions(home,ephem.Moon(home))[1],
-		'moon_set': "%s" % body_positions(home,ephem.Moon(home))[2],
+		'moon_rise': "%s" % get_body_positions(home,ephem.Moon(home))[0],
+		'moon_transit': "%s" % get_body_positions(home,ephem.Moon(home))[1],
+		'moon_set': "%s" % get_body_positions(home,ephem.Moon(home))[2],
 		'moon_az': "%.2f°" % numpy.degrees(ephem.Moon(home).az),
 		'moon_alt': "%.2f°" % numpy.degrees(ephem.Moon(home).alt),
 		'moon_ra': "%s" % ephem.Moon(home).ra,
@@ -402,9 +402,9 @@ def background_thread():
 		'moon_full': "%s" % ephem.localtime(ephem.next_full_moon(t)).strftime("%Y-%m-%d %H:%M:%S"),
 		'sun_at_start': get_sun_twilights(home)[2][0],
 		'sun_ct_start': get_sun_twilights(home)[0][0],
-		'sun_rise': "%s" % body_positions(home,ephem.Sun(home))[0],
-		'sun_transit': "%s" % body_positions(home,ephem.Sun(home))[1],
-		'sun_set': "%s" % body_positions(home,ephem.Sun(home))[2],
+		'sun_rise': "%s" % get_body_positions(home,ephem.Sun(home))[0],
+		'sun_transit': "%s" % get_body_positions(home,ephem.Sun(home))[1],
+		'sun_set': "%s" % get_body_positions(home,ephem.Sun(home))[2],
 		'sun_ct_end': get_sun_twilights(home)[0][1],
 		'sun_at_end': get_sun_twilights(home)[2][1],
 		'sun_az': "%.2f°" % numpy.degrees(ephem.Sun(home).az),
@@ -413,39 +413,39 @@ def background_thread():
 		'sun_dec': "%s" % ephem.Sun(home).dec,
 		'sun_equinox': "%s" % ephem.localtime(ephem.next_equinox(t)).strftime("%Y-%m-%d %H:%M:%S"),
 		'sun_solstice': "%s" % ephem.localtime(ephem.next_solstice(t)).strftime("%Y-%m-%d %H:%M:%S"),
-		'mercury_rise': "%s" % body_positions(home,ephem.Mercury(home))[0],
-		'mercury_transit': "%s" % body_positions(home,ephem.Mercury(home))[1],
-		'mercury_set': "%s" % body_positions(home,ephem.Mercury(home))[2],
+		'mercury_rise': "%s" % get_body_positions(home,ephem.Mercury(home))[0],
+		'mercury_transit': "%s" % get_body_positions(home,ephem.Mercury(home))[1],
+		'mercury_set': "%s" % get_body_positions(home,ephem.Mercury(home))[2],
 		'mercury_az': "%.2f°" % numpy.degrees(ephem.Mercury(home).az),
 		'mercury_alt': "%.2f°" % numpy.degrees(ephem.Mercury(home).alt),
-		'venus_rise': "%s" % body_positions(home,ephem.Venus(home))[0],
-		'venus_transit': "%s" % body_positions(home,ephem.Venus(home))[1],
-		'venus_set': "%s" % body_positions(home,ephem.Venus(home))[2],
+		'venus_rise': "%s" % get_body_positions(home,ephem.Venus(home))[0],
+		'venus_transit': "%s" % get_body_positions(home,ephem.Venus(home))[1],
+		'venus_set': "%s" % get_body_positions(home,ephem.Venus(home))[2],
 		'venus_az': "%.2f°" % numpy.degrees(ephem.Venus(home).az),
 		'venus_alt': "%.2f°" % numpy.degrees(ephem.Venus(home).alt),
-		'mars_rise': "%s" % body_positions(home,ephem.Mars(home))[0],
-		'mars_transit': "%s" % body_positions(home,ephem.Mars(home))[1],
-		'mars_set': "%s" % body_positions(home,ephem.Mars(home))[2],
+		'mars_rise': "%s" % get_body_positions(home,ephem.Mars(home))[0],
+		'mars_transit': "%s" % get_body_positions(home,ephem.Mars(home))[1],
+		'mars_set': "%s" % get_body_positions(home,ephem.Mars(home))[2],
 		'mars_az': "%.2f°" % numpy.degrees(ephem.Mars(home).az),
 		'mars_alt': "%.2f°" % numpy.degrees(ephem.Mars(home).alt),
-		'jupiter_rise': "%s" % body_positions(home,ephem.Jupiter(home))[0],
-		'jupiter_transit': "%s" % body_positions(home,ephem.Jupiter(home))[1],
-		'jupiter_set': "%s" % body_positions(home,ephem.Jupiter(home))[2],
+		'jupiter_rise': "%s" % get_body_positions(home,ephem.Jupiter(home))[0],
+		'jupiter_transit': "%s" % get_body_positions(home,ephem.Jupiter(home))[1],
+		'jupiter_set': "%s" % get_body_positions(home,ephem.Jupiter(home))[2],
 		'jupiter_az': "%.2f°" % numpy.degrees(ephem.Jupiter(home).az),
 		'jupiter_alt': "%.2f°" % numpy.degrees(ephem.Jupiter(home).alt),
-		'saturn_rise': "%s" % body_positions(home,ephem.Saturn(home))[0],
-		'saturn_transit': "%s" % body_positions(home,ephem.Saturn(home))[1],
-		'saturn_set': "%s" % body_positions(home,ephem.Saturn(home))[2],
+		'saturn_rise': "%s" % get_body_positions(home,ephem.Saturn(home))[0],
+		'saturn_transit': "%s" % get_body_positions(home,ephem.Saturn(home))[1],
+		'saturn_set': "%s" % get_body_positions(home,ephem.Saturn(home))[2],
 		'saturn_az': "%.2f°" % numpy.degrees(ephem.Saturn(home).az),
 		'saturn_alt': "%.2f°" % numpy.degrees(ephem.Saturn(home).alt),
-		'uranus_rise': "%s" % body_positions(home,ephem.Uranus(home))[0],
-		'uranus_transit': "%s" % body_positions(home,ephem.Uranus(home))[1],
-		'uranus_set': "%s" % body_positions(home,ephem.Uranus(home))[2],
+		'uranus_rise': "%s" % get_body_positions(home,ephem.Uranus(home))[0],
+		'uranus_transit': "%s" % get_body_positions(home,ephem.Uranus(home))[1],
+		'uranus_set': "%s" % get_body_positions(home,ephem.Uranus(home))[2],
 		'uranus_az': "%.2f°" % numpy.degrees(ephem.Uranus(home).az),
 		'uranus_alt': "%.2f°" % numpy.degrees(ephem.Uranus(home).alt),
-		'neptune_rise': "%s" % body_positions(home,ephem.Neptune(home))[0],
-		'neptune_transit': "%s" % body_positions(home,ephem.Neptune(home))[1],
-		'neptune_set': "%s" % body_positions(home,ephem.Neptune(home))[2],
+		'neptune_rise': "%s" % get_body_positions(home,ephem.Neptune(home))[0],
+		'neptune_transit': "%s" % get_body_positions(home,ephem.Neptune(home))[1],
+		'neptune_set': "%s" % get_body_positions(home,ephem.Neptune(home))[2],
 		'neptune_az': "%.2f°" % numpy.degrees(ephem.Neptune(home).az),
 		'neptune_alt': "%.2f°" % numpy.degrees(ephem.Neptune(home).alt)
 		})
@@ -493,11 +493,6 @@ def handle_connect():
 	global thread
 	if thread is None:
 		thread = socketio.start_background_task(target=background_thread)
-
-@socketio.on('disconnect')
-def handle_disconnect():
-	global thread
-	thread = None
 
 if __name__ == '__main__':
 	try:
