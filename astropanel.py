@@ -19,7 +19,7 @@ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.
 """
 
-DEBUG = False
+DEBUG = True
 
 from gps3 import gps3
 from gevent import monkey; monkey.patch_all()
@@ -35,7 +35,6 @@ __version__ = '2.0.0'
 app = Flask(__name__, static_folder='assets')
 socketio = SocketIO(app)
 thread = None
-refresh_time = 10
 
 class gpsTimeout(Exception):
 	def __init__(self, value):
@@ -214,19 +213,116 @@ def get_polaris_data(observer):
 
 	return polaris_data
 
-def get_localisation():
-	localisation = []
+def get_gps():
+	gps_data = []
+	timeout = datetime.timedelta(seconds=30)
+	loop_time = 1
+	gps_start_time = datetime.datetime.utcnow()
+	status = 'Trying GPS'
 
-	# localisation is order: user weather file - system weather file - config file - GPS
-	user_weather_file = "/home/astroberry/.config/lxpanel/LXDE-astroberry/panels/panel"
-	system_weather_file  = "/etc/xdg/lxpanel/LXDE-astroberry/panels/panel"
+	gpsd_socket = gps3.GPSDSocket()
+	gpsd_socket.connect()
+	gpsd_socket.watch()
+	data_stream = gps3.DataStream()
+
+	for new_data in gpsd_socket:
+		waiting_time = datetime.datetime.utcnow() - gps_start_time
+		if waiting_time > timeout:
+			raise gpsTimeout("GPS timeout")
+		if new_data:
+			data_stream.unpack(new_data)
+			if data_stream.TPV['lat'] != 'n/a' and int(data_stream.TPV['mode']) == 3:
+				gps_data.append(data_stream.TPV['lat'])
+				gps_data.append(data_stream.TPV['lon'])
+				gps_data.append(data_stream.TPV['alt'])
+				gps_data.append(data_stream.TPV['time'])
+				break
+		else:
+			time.sleep(loop_time)
+		if DEBUG:
+			status = status + '.'
+			print("%s" % status, end = '\r')
+
+	gpsd_socket.close()
+	return gps_data
+
+def get_location():
+	location = []
 	config_file = "/etc/astropanel.conf"
+	user_weather_file = "/home/%s/.config/lxpanel/LXDE-astroberry/panels/panel" % os.getlogin()
+	system_weather_file  = "/etc/xdg/lxpanel/LXDE-astroberry/panels/panel"
 
 	if os.path.isfile(config_file):
 		config = configparser.ConfigParser()
 		config.read(config_file)
-	
-	if os.path.isfile(user_weather_file):
+		if 'use_gps' in config['default'] and config['default']['use_gps'] in ['true', 'True', 'TRUE', 'yes', 'Yes', 'YES', '1']:
+			try:
+				gps_data = get_gps()
+				latitude = "%s" % gps_data[0]
+				longitude = "%s" % gps_data[1]
+				elevation = "%.2f" % gps_data[2]
+				city = 'GPS location'
+				alias = 'GPS location'
+				position_mode = 'gps'
+				if DEBUG:
+					print("Loading values from GPS")
+					print(position_mode)
+					print(latitude)
+					print(longitude)
+					print(elevation)
+					print(city)
+					print(alias)
+				location.append(latitude)
+				location.append(longitude)
+				location.append(elevation)
+				location.append(city)
+				location.append(alias)
+				location.append(position_mode)
+			except gpsTimeout:
+				if 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
+					latitude = config['default']['latitude']
+					longitude = config['default']['longitude']
+					elevation = config['default']['elevation']
+					city = config['default']['city']
+					alias = config['default']['alias']
+					position_mode = config_file
+					if DEBUG:
+						print("No GPS data available. Falling back to configuration file")
+						print(position_mode)
+						print(latitude)
+						print(longitude)
+						print(elevation)
+						print(city)
+						print(alias)
+					location.append(latitude)
+					location.append(longitude)
+					location.append(elevation)
+					location.append(city)
+					location.append(alias)
+					location.append(position_mode)
+		else:
+			if 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
+				latitude = config['default']['latitude']
+				longitude = config['default']['longitude']
+				elevation = config['default']['elevation']
+				city = config['default']['city']
+				alias = config['default']['alias']
+				position_mode = config_file
+				if DEBUG:
+					print("Loading values from configuration file")
+					print(position_mode)
+					print(latitude)
+					print(longitude)
+					print(elevation)
+					print(city)
+					print(alias)
+				location.append(latitude)
+				location.append(longitude)
+				location.append(elevation)
+				location.append(city)
+				location.append(alias)
+				location.append(position_mode)
+	elif os.path.isfile(user_weather_file):
 		with open(user_weather_file,'r') as file:
 			for line in file:
 				latitude_line = re.findall('latitude=.*', line)
@@ -251,13 +347,12 @@ def get_localisation():
 			print(elevation)
 			print(city)
 			print(alias)
-		localisation.append(latitude)
-		localisation.append(longitude)
-		localisation.append(elevation)
-		localisation.append(city)
-		localisation.append(alias)
-		localisation.append(position_mode)
-		return localisation
+		location.append(latitude)
+		location.append(longitude)
+		location.append(elevation)
+		location.append(city)
+		location.append(alias)
+		location.append(position_mode)
 	elif os.path.isfile(system_weather_file):
 		with open(system_weather_file,'r') as file:
 			for line in file:
@@ -283,96 +378,51 @@ def get_localisation():
 			print(elevation)
 			print(city)
 			print(alias)
-		localisation.append(latitude)
-		localisation.append(longitude)
-		localisation.append(elevation)
-		localisation.append(city)
-		localisation.append(alias)
-		localisation.append(position_mode)
-		return localisation
-	elif 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
-		latitude = config['default']['latitude']
-		longitude = config['default']['longitude']
-		elevation = config['default']['elevation']
-		city = config['default']['city']
-		alias = config['default']['alias']
-		position_mode = config_file
+		location.append(latitude)
+		location.append(longitude)
+		location.append(elevation)
+		location.append(city)
+		location.append(alias)
+		location.append(position_mode)
+
+	if not location:
+		# no location data - loading defaults
+		latitude = '52.237049'
+		longitude = '21.017532'
+		elevation = 0
+		city = 'Warsaw'
+		alias = 'Demo location'
+		position_mode = 'demo'
 		if DEBUG:
-			print("Loading values from configuration file")
-			print(position_mode)
+			print("No location data available. Loading defaults")
 			print(latitude)
 			print(longitude)
 			print(elevation)
 			print(city)
 			print(alias)
-		localisation.append(latitude)
-		localisation.append(longitude)
-		localisation.append(elevation)
-		localisation.append(city)
-		localisation.append(alias)
-		localisation.append(position_mode)
-		return localisation
-	else:
-		try:
-			print('Trying GPS...')
-			gps_data = get_gps()
-			latitude = "%s" % gps_data[0]
-			longitude = "%s" % gps_data[1]
-			elevation = "%.2f" % gps_data[2]
-			city = ''
-			alias = ''
-			position_mode = 'gps'
-			if DEBUG:
-				print("Loading values from GPS")
-				print(position_mode)
-				print(latitude)
-				print(longitude)
-				print(elevation)
-				print(city)
-				print(alias)
-			localisation.append(latitude)
-			localisation.append(longitude)
-			localisation.append(elevation)
-			localisation.append(city)
-			localisation.append(alias)
-			localisation.append(position_mode)
-			return localisation
-		except gpsTimeout:
-			# demo localisation
-			latitude = '52.237049'
-			longitude = '21.017532'
-			elevation = 0
-			city = 'Warsaw'
-			alias = 'Warsaw'
-			position_mode = 'demo'
-			if DEBUG:
-				print("No localisation data available. Loading defaults")
-				print(latitude)
-				print(longitude)
-				print(elevation)
-				print(city)
-				print(alias)
-				print(position_mode)
-			localisation.append(latitude)
-			localisation.append(longitude)
-			localisation.append(elevation)
-			localisation.append(city)
-			localisation.append(alias)
-			localisation.append(position_mode)
-			return localisation
+			print(position_mode)
+		location.append(latitude)
+		location.append(longitude)
+		location.append(elevation)
+		location.append(city)
+		location.append(alias)
+		location.append(position_mode)
+
+	return location
 
 def background_thread():
-	localisation = get_localisation()
-
-	# init observer
-	home = ephem.Observer()
-
-	# set geo position
-	home.lat = localisation[0]
-	home.lon = localisation[1]
-	home.elevation = float(localisation[2])
-
 	while True:
+		# update location
+		location = get_location()
+
+		# init observer
+		home = ephem.Observer()
+
+		# set geo position
+		home.lat = location[0]
+		home.lon = location[1]
+		home.elevation = float(location[2])
+
 		# update time
 		t = datetime.datetime.utcnow()
 		home.date = t
@@ -383,9 +433,9 @@ def background_thread():
 		'latitude': "%s" % home.lat,
 		'longitude': "%s" % home.lon,
 		'elevation': "%.2f" % home.elevation,
-		'city': localisation[3],
-		'alias': localisation[4],
-		'mode': localisation[5],
+		'city': location[3],
+		'alias': location[4],
+		'mode': location[5],
 		'polaris_hour_angle': polaris_data[0],
 		'polaris_next_transit': "%s" % polaris_data[1],
 		'polaris_alt': "%.2f°" % numpy.degrees(polaris_data[2]),
@@ -449,36 +499,7 @@ def background_thread():
 		'neptune_az': "%.2f°" % numpy.degrees(ephem.Neptune(home).az),
 		'neptune_alt': "%.2f°" % numpy.degrees(ephem.Neptune(home).alt)
 		})
-		socketio.sleep(refresh_time)
-
-def get_gps():
-	gps_data = []
-	timeout = datetime.timedelta(seconds=60)
-	loop_time = 1
-	gps_start_time = datetime.datetime.utcnow()
-
-	gpsd_socket = gps3.GPSDSocket()
-	gpsd_socket.connect()
-	gpsd_socket.watch()
-	data_stream = gps3.DataStream()
-
-	for new_data in gpsd_socket:
-		waiting_time = datetime.datetime.utcnow() - gps_start_time
-		if waiting_time > timeout:
-			raise gpsTimeout("GPS timeout")
-		if new_data:
-			data_stream.unpack(new_data)
-			if data_stream.TPV['lat'] != 'n/a' and int(data_stream.TPV['mode']) == 3:
-				gps_data.append(data_stream.TPV['lat'])
-				gps_data.append(data_stream.TPV['lon'])
-				gps_data.append(data_stream.TPV['alt'])
-				gps_data.append(data_stream.TPV['time'])
-				break
-		else:
-			time.sleep(loop_time)
-
-	gpsd_socket.close()
-	return gps_data
+		socketio.sleep(60)
 
 def shut_down():
     print('Keyboard interrupt received\nTerminated by user\nGood Bye.\n')
