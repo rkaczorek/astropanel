@@ -19,7 +19,7 @@ the Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
 Boston, MA 02110-1301, USA.
 """
 
-DEBUG = True
+DEBUG = False
 
 from gps3 import gps3
 from gevent import monkey; monkey.patch_all()
@@ -249,7 +249,7 @@ def get_gps():
 def get_location():
 	location = []
 	config_file = "/etc/astropanel.conf"
-	user_weather_file = "/home/%s/.config/lxpanel/LXDE-astroberry/panels/panel" % os.getlogin()
+	user_weather_file = "/home/astroberry/.config/lxpanel/LXDE-astroberry/panels/panel"
 	system_weather_file  = "/etc/xdg/lxpanel/LXDE-astroberry/panels/panel"
 
 	if os.path.isfile(config_file):
