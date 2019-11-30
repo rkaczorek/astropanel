@@ -1,13 +1,13 @@
 [Unit]
 Description=Astro Panel
-After=multi-user.target
+After=multi-user.target gpsd.socket
 
 [Service]
 Type=idle
-User=astroberry
+User=nobody
 ExecStart=/usr/bin/python3 /var/www/astropanel/astropanel.py
 Restart=always
-RestartSec=5
+RestartSec=10
 
 [Install]
 WantedBy=multi-user.target

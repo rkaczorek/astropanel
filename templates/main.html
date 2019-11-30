@@ -23,9 +23,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Astronomy</title>
     <link href="assets/css/bootstrap.min.css" rel="stylesheet" media="screen">
-    <link href="assets/css/bootstrap-responsive.min.css" rel="stylesheet">
     <link href="assets/css/style.css" rel="stylesheet">
-    <script src="assets/js/jquery-3.2.1.min.js"></script>
+    <script src="assets/js/jquery-3.4.1.min.js"></script>
     <script src="assets/js/bootstrap.min.js"></script>
     <script src="assets/js/socket.io.min.js"></script>
     <script type="text/javascript">
@@ -96,16 +95,6 @@
                 $("#neptune_set").html(data.neptune_set);
                 $("#neptune_az").html(data.neptune_az);
                 $("#neptune_alt").html(data.neptune_alt);
-
-				<!-- Set locality -->
-				var locality = '';
-				if ( data.alias ) {
-					$("#locality").html('for ' + data.alias );
-				} else if ( data.city ) {
-					$("#locality").html('for ' + data.city );
-				} else {
-					$("#locality").html('for ' + data.latitude + ' ' + data.longitude );
-				}
 
 				<!-- Set polaris marker -->
 				var pha = data.polaris_hour_angle;
@@ -216,8 +205,8 @@
     </script>
 </head>
 <body>
-	<div class="container">
-		<h1>Celestial Information <span id="locality"></span></h1>
+	<div class="panel_container">
+		<h1>Celestial Information</span></h1>
 		<div id="displayctl">
 			<button id="togglepolaris" onclick="togglepolaris();">Polar Finder</button>
 			<button id="togglemoon" onclick="togglemoon();">Moon</button>
@@ -311,9 +300,9 @@
 			document.getElementById("planets").style.display="none";
 	}
         function toggleplanets() {
-                        document.getElementById("polaris").style.display="none";
-                        document.getElementById("moon").style.display="none";
-                        document.getElementById("sun").style.display="none";
+			document.getElementById("polaris").style.display="none";
+			document.getElementById("moon").style.display="none";
+			document.getElementById("sun").style.display="none";
 			document.getElementById("planets").style.display="block";
         }
 	</script>

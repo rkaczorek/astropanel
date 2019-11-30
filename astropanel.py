@@ -215,7 +215,7 @@ def get_polaris_data(observer):
 
 def get_gps():
 	gps_data = []
-	timeout = datetime.timedelta(seconds=30)
+	timeout = datetime.timedelta(seconds=10)
 	loop_time = 1
 	gps_start_time = datetime.datetime.utcnow()
 	status = 'Trying GPS'
@@ -248,99 +248,16 @@ def get_gps():
 
 def get_location():
 	location = []
-	config_file = "/etc/astropanel.conf"
-	user_weather_file = "/home/astroberry/.config/lxpanel/LXDE-astroberry/panels/panel"
-	system_weather_file  = "/etc/xdg/lxpanel/LXDE-astroberry/panels/panel"
-
-	if os.path.isfile(config_file):
-		config = configparser.ConfigParser()
-		config.read(config_file)
-		if 'use_gps' in config['default'] and config['default']['use_gps'] in ['true', 'True', 'TRUE', 'yes', 'Yes', 'YES', '1']:
-			try:
-				gps_data = get_gps()
-				latitude = "%s" % gps_data[0]
-				longitude = "%s" % gps_data[1]
-				elevation = "%.2f" % gps_data[2]
-				city = 'GPS location'
-				alias = 'GPS location'
-				position_mode = 'gps'
-				if DEBUG:
-					print("Loading values from GPS")
-					print(position_mode)
-					print(latitude)
-					print(longitude)
-					print(elevation)
-					print(city)
-					print(alias)
-				location.append(latitude)
-				location.append(longitude)
-				location.append(elevation)
-				location.append(city)
-				location.append(alias)
-				location.append(position_mode)
-			except gpsTimeout:
-				if 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
-					latitude = config['default']['latitude']
-					longitude = config['default']['longitude']
-					elevation = config['default']['elevation']
-					city = config['default']['city']
-					alias = config['default']['alias']
-					position_mode = config_file
-					if DEBUG:
-						print("No GPS data available. Falling back to configuration file")
-						print(position_mode)
-						print(latitude)
-						print(longitude)
-						print(elevation)
-						print(city)
-						print(alias)
-					location.append(latitude)
-					location.append(longitude)
-					location.append(elevation)
-					location.append(city)
-					location.append(alias)
-					location.append(position_mode)
-		else:
-			if 'latitude' in config['default'] and 'longitude' in config['default'] and 'elevation' in config['default'] and 'city' in config['default'] and 'alias' in config['default']:
-				latitude = config['default']['latitude']
-				longitude = config['default']['longitude']
-				elevation = config['default']['elevation']
-				city = config['default']['city']
-				alias = config['default']['alias']
-				position_mode = config_file
-				if DEBUG:
-					print("Loading values from configuration file")
-					print(position_mode)
-					print(latitude)
-					print(longitude)
-					print(elevation)
-					print(city)
-					print(alias)
-				location.append(latitude)
-				location.append(longitude)
-				location.append(elevation)
-				location.append(city)
-				location.append(alias)
-				location.append(position_mode)
-	elif os.path.isfile(user_weather_file):
-		with open(user_weather_file,'r') as file:
-			for line in file:
-				latitude_line = re.findall('latitude=.*', line)
-				longitude_line = re.findall('longitude=.*', line)
-				city_line = re.findall('city=.*', line)
-				alias_line = re.findall('alias=.*', line)
-				if latitude_line:
-					latitude = latitude_line[0].split('=')[1]
-				if longitude_line:
-					longitude = longitude_line[0].split('=')[1]
-				elevation = 0
-				if city_line:
-					city = city_line[0].split('=')[1]
-				if alias_line:
-					alias = alias_line[0].split('=')[1]
-		position_mode = user_weather_file
+	try:
+		gps_data = get_gps()
+		latitude = "%s" % gps_data[0]
+		longitude = "%s" % gps_data[1]
+		elevation = "%.2f" % gps_data[2]
+		city = 'GPS location'
+		alias = 'GPS location'
+		position_mode = 'gps'
 		if DEBUG:
-			print("Loading values from user weather file")
+			print("Loading values from GPS")
 			print(position_mode)
 			print(latitude)
 			print(longitude)
@@ -353,39 +270,7 @@ def get_location():
 		location.append(city)
 		location.append(alias)
 		location.append(position_mode)
-	elif os.path.isfile(system_weather_file):
-		with open(system_weather_file,'r') as file:
-			for line in file:
-				latitude_line = re.findall('latitude=.*', line)
-				longitude_line = re.findall('longitude=.*', line)
-				city_line = re.findall('city=.*', line)
-				alias_line = re.findall('alias=.*', line)
-				if latitude_line:
-					latitude = latitude_line[0].split('=')[1]
-				if longitude_line:
-					longitude = longitude_line[0].split('=')[1]
-				elevation = 0
-				if city_line:
-					city = city_line[0].split('=')[1]
-				if alias_line:
-					alias = alias_line[0].split('=')[1]
-		position_mode = system_weather_file
-		if DEBUG:
-			print("Loading values from system weather file")
-			print(position_mode)
-			print(latitude)
-			print(longitude)
-			print(elevation)
-			print(city)
-			print(alias)
-		location.append(latitude)
-		location.append(longitude)
-		location.append(elevation)
-		location.append(city)
-		location.append(alias)
-		location.append(position_mode)
-
-	if not location:
+	except gpsTimeout:
 		# no location data - loading defaults
 		latitude = '52.237049'
 		longitude = '21.017532'
@@ -499,7 +384,7 @@ def background_thread():
 		'neptune_az': "%.2f°" % numpy.degrees(ephem.Neptune(home).az),
 		'neptune_alt': "%.2f°" % numpy.degrees(ephem.Neptune(home).alt)
 		})
-		socketio.sleep(60)
+		socketio.sleep(10)
 
 def shut_down():
     print('Keyboard interrupt received\nTerminated by user\nGood Bye.\n')
