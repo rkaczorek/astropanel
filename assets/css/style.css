@@ -31,7 +31,6 @@ body {
 h1 {
 	background-image: url("./../img/astropanel.svg");
 	background-repeat: no-repeat;
-	background-position: 5px 5px;
 	background-color: rgb(110, 132, 163);
 	border-radius: 5px;
 	margin-top: 0px;
@@ -40,6 +39,7 @@ h1 {
 	font-size: 20px;
 	color: white;
 	height: 1.2em;
+	font-weight: bold;
 }
 
 h2 {
@@ -64,8 +64,9 @@ button {
     color: #FF0000;
 }
 
-.container {
-	width: 480px;    
+.panel_container {
+	width: 480px;
+	margin-left: 0px;
 }
 
 #displayctl {
@@ -99,6 +100,10 @@ table, th, td {
 	float: left;
 	margin-right: 10px;
 	margin-left: 10px;
+}
+
+#polaris_marker {
+	width: 280px;
 }
 
 .polarishdr {
@@ -150,7 +155,7 @@ table, th, td {
 }
 
 #planets img {
-	margin-top: 20px;
+	margin-top: 30px;
 }
 
 .planetshdr {
